@@ -1,0 +1,12 @@
+# Keep LF in the working tree on every platform.
+#
+# Prettier is configured with `endOfLine: "lf"` and CI runs `fmt:check` on
+# windows-latest. Without this, Git's autocrlf would rewrite line endings on
+# checkout and every file would fail the format check on a fresh clone.
+* text=auto eol=lf
+
+# Generated — collapse it in diffs and reviews, but still diffable on demand.
+app/lib/api/generated/** linguist-generated=true
+
+# Lockfiles: ours, never merged by hand.
+bun.lock -diff merge=binary

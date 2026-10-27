@@ -1,0 +1,46 @@
+{
+   "name": "rudra",
+   "private": true,
+   "type": "module",
+   "version": "0.0.0",
+   "description": "A personal AI agent with a native desktop GUI and a real memory.",
+   "license": "MIT",
+   "workspaces": [
+      "packages/*",
+      "server",
+      "tooling/*"
+   ],
+   "scripts": {
+      "dev": "bun --watch server/src/index.ts",
+      "smoke": "bun run tooling/smoke/index.ts",
+      "test": "bun test",
+      "typecheck": "tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p tooling/schema-to-dart/tsconfig.json && tsc --noEmit -p tooling/smoke/tsconfig.json && tsc --noEmit -p tooling/fmt-dart/tsconfig.json",
+      "lint": "eslint .",
+      "lint:fix": "eslint . --fix",
+      "fmt": "prettier --write .",
+      "fmt:check": "prettier --check .",
+      "codegen": "bun run tooling/schema-to-dart/index.ts",
+      "codegen:check": "bun run tooling/schema-to-dart/index.ts --check",
+      "fix": "bun run lint:fix && bun run fmt",
+      "check": "bun run fmt:check && bun run lint && bun run typecheck && bun run codegen:check && bun run test",
+      "app:get": "cd app && flutter pub get",
+      "app:analyze": "cd app && flutter analyze",
+      "app:test": "cd app && flutter test --exclude-tags spine",
+      "app:run": "cd app && flutter run",
+      "app:fmt": "bun run tooling/fmt-dart/index.ts",
+      "app:check": "bun run app:fmt:check && bun run app:analyze && bun run app:test",
+      "check:all": "bun run check && bun run app:check && bun run app:spine && bun run smoke",
+      "app:spine": "cd app && flutter test --tags spine",
+      "app:fmt:check": "bun run tooling/fmt-dart/index.ts --check",
+      "app:preview": "cd app && flutter test test/palette_preview_test.dart --tags preview"
+   },
+   "devDependencies": {
+      "@eslint/js": "10.0.1",
+      "@types/bun": "1.3.14",
+      "eslint": "10.13.0",
+      "eslint-config-prettier": "10.1.8",
+      "prettier": "3.9.10",
+      "typescript": "5.9.3",
+      "typescript-eslint": "8.72.1"
+   }
+}

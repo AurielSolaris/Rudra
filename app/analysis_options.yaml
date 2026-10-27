@@ -1,0 +1,65 @@
+# Dart analyzer configuration.
+#
+# The TypeScript side runs ESLint with type-checked rules; this is the Dart
+# equivalent. Stricter than the default lints, and aligned with
+# docs/ui-guidelines.md.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  errors:
+    # Generated code is not ours to fix; it is regenerated instead.
+    # (The generated file carries its own ignore_for_file header.)
+    todo: ignore
+
+  exclude:
+    - build/**
+
+linter:
+  rules:
+    # ---- Correctness ------------------------------------------------------
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+    close_sinks: true
+    discarded_futures: true
+    unawaited_futures: true
+    only_throw_errors: true
+    throw_in_finally: true
+    test_types_in_equals: true
+    use_build_context_synchronously: true
+
+    # ---- Performance (docs/ui-guidelines.md §11) --------------------------
+    # A const constructor is the cheapest possible rebuild.
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    avoid_unnecessary_containers: true
+    sized_box_for_whitespace: true
+
+    # ---- Immutability -----------------------------------------------------
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_final_in_for_each: true
+
+    # ---- Readability ------------------------------------------------------
+    always_put_required_named_parameters_first: true
+    avoid_positional_boolean_parameters: true
+    directives_ordering: true
+    omit_local_variable_types: false
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    sort_constructors_first: true
+    unnecessary_parenthesis: true
+    use_super_parameters: true
+
+    # ---- Accessibility / UX (docs/ui-guidelines.md §10) -------------------
+    use_colored_box: true
+    use_decorated_box: true

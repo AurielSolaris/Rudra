@@ -1,0 +1,367 @@
+===============================================================================
+ RUDRA - COMPONENT MAP
+ Companion to PLAN.MD. Updated 2026-10-26.
+ Every component that will exist, with its phase and status.
+===============================================================================
+
+ STATUS LEGEND        PHASE LEGEND
+ -----------------    --------------------------------------------------
+ [ ]  not started     P0  skeleton / handshake
+ [~]  in progress     P1  chat that works
+ [x]  done            P2  memory
+ [!]  blocked         P3  tools and recall
+ [-]  deferred        P4  polish, packaging, optional extras
+ [D]  dropped         P5  maybe (skills, plugins)
+
+ Keep this file honest. A [x] means it works and has a test.
+
+===============================================================================
+ REPOSITORY LAYOUT
+===============================================================================
+
+rudra/
++-- PLAN.MD                             [x] P0  the plan
++-- MAP.txt                             [x] P0  this file
++-- README.md                           [x] P0  commands first; read this
++-- LICENSE                             [x] P0  MIT
++-- package.json                        [x] P0  bun workspaces + scripts
++-- bunfig.toml                         [x] P0  exact versions only
++-- tsconfig.base.json                  [x] P0  strict + noUncheckedIndexedAccess
++-- .github/workflows/ci.yml            [x] P0  3-OS matrix + size report
+|
++-- app/                                FLUTTER DESKTOP GUI (Dart)
++-- server/                             BUN + ELYSIA SIDECAR (TypeScript)
++-- packages/                           SHARED TS MODULES
++-- tooling/                            CODEGEN AND BUILD SCRIPTS
++-- docs/                               NOTES, DECISIONS, UI CONTRACT
+
+===============================================================================
+ app/  --  FLUTTER DESKTOP GUI
+ Windows / macOS / Linux. No Android, no Web, no iOS.
+===============================================================================
+
+app/
++-- pubspec.yaml                        [x] P0  riverpod, http, meta
++-- lib/
+|   +-- main.dart                       [x] P0  ProviderScope + MaterialApp
+|   |
+|   +-- boot/
+|   |   +-- sidecar_process.dart        [x] P0  spawn/supervise/kill; dev+bundled
+|   |   +-- handshake.dart              [x] P0  validating parser, null on junk
+|   |   +-- (orphan guard)              [x] P0  stdin close + SIGTERM + SIGKILL
+|   |   |                                       verified: no orphan on kill
+|   |   +-- (boot UI)                   [x] P0  BootGate in ui/shell/app_shell
+|   |
+|   +-- api/
+|   |   +-- client.dart                 [x] P0  bearer on every request
+|   |   +-- sse.dart                    [x] P0  frame parser, CRLF + split chunks
+|   |   +-- generated/                  [x] P0  models.dart (DO NOT EDIT)
+|   |
+|   +-- state/                          RIVERPOD + riverpod_generator (resolved)
+|   |                                   rules: docs/ui-guidelines.md §12
+|   |                                   *** stream deltas NEVER enter the
+|   |                                       provider graph - per-message
+|   |                                       ValueNotifier instead. §11 ***
+|   |   +-- sidecar_store.dart          [x] P0  boot/retry/shutdown + client
+|   |   +-- session_store.dart          [ ] P1
+|   |   +-- message_store.dart          [~] P0  in-memory; SQLite is P1
+|   |   +-- memory_store.dart           [ ] P2
+|   |   +-- settings_store.dart         [ ] P1
+|   |   +-- permission_store.dart       [ ] P3
+|   |
+|   +-- ui/
+|   |   +-- shell/
+|   |   |   +-- app_shell.dart          [x] P0  shell + BootGate + Ctrl/Cmd+N
+|   |   |   +-- sidebar.dart            [x] P0  new-session + backend status
+|   |   |   +-- title_bar.dart          [ ] P1
+|   |   |   +-- command_palette.dart    [ ] P4
+|   |   |
+|   |   +-- chat/
+|   |   |   +-- chat_view.dart          [x] P0  ListView.builder + pin-to-bottom
+|   |   |   +-- message_bubble.dart     [x] P0  flat; partial-stream notice
+|   |   |   +-- composer.dart           [x] P0  Ctrl+Enter send, Esc stop
+|   |   |   +-- streaming_text.dart     [x] P0  *** INVARIANT 11 LIVES HERE ***
+|   |   |   |                                   ValueListenableBuilder + caret;
+|   |   |   |                                   markdown renderer is P1
+|   |   |   +-- message_notifier.dart   [x] P0  StreamingMessage + completion
+|   |   |   +-- markdown/
+|   |   |   |   +-- renderer.dart       [ ] P1  incremental markdown -> widgets
+|   |   |   |   +-- code_block.dart     [ ] P1  highlight + copy button
+|   |   |   |   +-- table.dart          [ ] P1
+|   |   |   |   +-- math.dart           [ ] P1  flutter_math_fork
+|   |   |   |   +-- mermaid.dart        [ ] P4  flutter_svg + render request
+|   |   |   +-- tool_call_card.dart     [ ] P3  collapsible, shows args + result
+|   |   |   +-- interrupt_button.dart   [ ] P1
+|   |   |
+|   |   +-- memory/
+|   |   |   +-- memory_panel.dart       [ ] P2  both stores, usage meters
+|   |   |   +-- entry_editor.dart       [ ] P2  hand-edit an entry
+|   |   |   +-- pending_review.dart     [ ] P2  approve / reject staged writes
+|   |   |   +-- journey_view.dart       [-] P4  timeline / star map
+|   |   |
+|   |   +-- search/
+|   |   |   +-- session_search_view.dart[ ] P3  FTS5 results, jump to message
+|   |   |
+|   |   +-- settings/
+|   |   |   +-- provider_settings.dart  [ ] P1  base URL, key, model picker
+|   |   |   +-- tool_settings.dart      [ ] P3  fs allowlist, shell policy
+|   |   |   +-- memory_settings.dart    [ ] P2  limits, write_approval
+|   |   |   +-- appearance.dart         [ ] P4  theme, font, density
+|   |   |
+|   |   +-- permissions/
+|   |   |   +-- confirm_dialog.dart     [ ] P3  "run this command?" / "write here?"
+|   |   |   +-- always_allow_list.dart  [ ] P3  visible and revocable
+|   |   |
+|   |   +-- common/
+|   |       +-- theme.dart              [x] P0  ThemeExtension, light + dark
+|   |       +-- icons.dart              [ ] P1  ONE icon set, re-exported + sized
+|   |       +-- shortcuts.dart          [ ] P4  one shared Shortcuts/Actions layer
+|   |       +-- primitives/             ONE PER CONCERN - never fork (§1.3)
+|   |           +-- rudra_button.dart   [x] P0  9 variants, owns its padding
+|   |           +-- search_field.dart   [ ] P1  borderless, underline-on-focus
+|   |           +-- segmented_control.dart [ ] P1  small exclusive sets
+|   |           +-- rudra_switch.dart   [ ] P1  bare + semantics label
+|   |           +-- list_row.dart       [ ] P1  label/description/action
+|   |           +-- loader.dart         [x] P0  NEVER the text "Loading..."
+|   |           +-- error_state.dart    [x] P0  boundary + dialog + boot banner
+|   |           +-- empty_state.dart    [x] P0
+|   |           +-- log_view.dart       [x] P0  no bg, hairline, small mono
+|   |           +-- confirm_dialog.dart [ ] P1  THE ONLY "are you sure"
+|   |
+|   +-- ffi/                            [-] P4  only if genuinely needed
+|       +-- tree_sitter.dart            [-] P4  highlight fallback (PLAN.MD §3)
+|
++-- test/                               [~] P1  21 tests: handshake, SSE,
+|                                           notifier, theme, primitives
++-- integration_test/                   [ ] P3  full-flow driver tests
++-- windows/ macos/ linux/              [ ] P0  platform runners
+
+===============================================================================
+ server/  --  BUN + ELYSIA SIDECAR
+ Compiles to one standalone binary via `bun build --compile`.
+===============================================================================
+
+server/
++-- package.json                        [ ] P0
++-- src/
+|   +-- index.ts                        [x] P0  bind :0, print handshake
+|   +-- app.ts                          [x] P0  elysia + onRequest guard
+|   +-- auth.ts                         [x] P0  timing-safe; rejects Origin
+|   +-- lifecycle.ts                    [x] P0  stdin EOF + ppid + signals
+|   |
+|   +-- routes/
+|   |   +-- health.ts                   [x] P0
+|   |   +-- chat.ts                     [~] P1  POST /chat/echo works (P0 spine);
+|   |                                           real provider stream is P1
+|   |   +-- sessions.ts                 [ ] P1  list / create / rename / delete
+|   |   +-- messages.ts                 [ ] P1  paged history read
+|   |   +-- memory.ts                   [ ] P2  read stores, pending, approve/reject
+|   |   +-- search.ts                   [ ] P3  session search
+|   |   +-- tools.ts                    [ ] P3  permission grants, allowlist CRUD
+|   |   +-- providers.ts                [ ] P1  list models, validate a key
+|   |
+|   +-- sse.ts                          [x] P0  generator -> SSE + parseSse
+|   +-- errors.ts                       [x] P0  AppError -> HTTP status
+|   +-- version.ts                      [x] P0  one source for the version
+|   +-- config.ts                       [ ] P1  TOML at ~/.rudra/config.toml
+|   +-- keychain.ts                     [ ] P1  OS keychain bridge for API keys
+|
++-- test/                               [x] P0  14 tests, no port needed
+
+===============================================================================
+ packages/  --  SHARED TYPESCRIPT MODULES
+===============================================================================
+
+packages/
+|
++-- contracts/                          SINGLE SOURCE OF TRUTH FOR TYPES
+|   +-- src/
+|       +-- chat.ts                     [x] P0  EchoRequest + StreamEvent union
+|       +-- common.ts                   [x] P0  Id, ApiError, Health, Handshake
+|       +-- session.ts                  [ ] P1
+|       +-- message.ts                  [ ] P1
+|       +-- memory.ts                   [ ] P2  tool payloads, error shapes
+|       +-- tools.ts                     [ ] P3  per-tool args + results
+|       +-- search.ts                   [ ] P3  3 search shapes
+|       +-- provider.ts                 [ ] P1
+|       +-- index.ts                    [x] P0  SCHEMAS manifest for codegen
+|
++-- db/                                 DRIZZLE + SQLITE
+|   +-- src/
+|   |   +-- main/
+|   |   |   +-- schema.ts               [ ] P1  sessions, messages, tool_calls,
+|   |   |   |                                   memory_entries, memory_pending,
+|   |   |   |                                   attachments
+|   |   |   +-- fts.ts                  [ ] P3  FTS5 vtable + sync triggers
+|   |   |   +-- client.ts               [ ] P1  WAL, synchronous=NORMAL, FKs on
+|   |   +-- cache/
+|   |   |   +-- schema.ts               [ ] P1  summaries, tool_result_cache,
+|   |   |   |                                   token_counts, provider_models
+|   |   |   +-- client.ts               [ ] P1  synchronous=OFF, drop-on-mismatch
+|   |   |                                       incl. diagram_cache (PLAN §5.8)
+|   |   +-- migrate.ts                  [ ] P1  main only; cache is never migrated
+|   |   +-- reconcile.ts                [ ] P2  .md files vs DB mirror; FILE WINS
+|   +-- drizzle/                        [ ] P1  generated migrations
+|
++-- core/                               THE AGENT LOOP
+|   +-- src/
+|   |   +-- loop.ts                     [ ] P1  turn: prompt -> stream -> tools -> repeat
+|   |   +-- system_prompt.ts            [ ] P1  assembly; memory block injected ONCE
+|   |   +-- snapshot.ts                 [ ] P2  frozen memory snapshot per session
+|   |   +-- autosave.ts                 [ ] P1  250ms debounce, final flush (PLAN §7)
+|   |   +-- interrupt.ts                [ ] P1  cancel a stream, mark interrupted
+|   |   +-- context.ts                  [ ] P1  token budget, truncation policy
+|   |   +-- compaction.ts               [-] P4  the one allowed cache-breaking op
+|   |   +-- background_review.ts        [-] P4  post-turn self-curation (PLAN §5.7)
+|   |
+|   +-- providers/
+|       +-- types.ts                    [ ] P1  the one interface all adapters meet
+|       +-- openai_compatible.ts        [ ] P1  covers Portal/OpenRouter/Ollama/vLLM
+|       +-- anthropic.ts                [ ] P3  native
+|       +-- gemini.ts                   [ ] P3  native
+|       +-- registry.ts                 [ ] P1
+|
++-- memory/                             THE CURATED STORES
+|   +-- src/
+|       +-- store.ts                    [ ] P2  load/save .md, `§` entry format
+|       +-- limits.ts                   [ ] P2  char accounting, usage header
+|       +-- ops.ts                      [ ] P2  add / patch / remove, batch-atomic
+|       +-- matcher.ts                  [ ] P2  unique substring, whole-entry wins,
+|       |                                       closest_entries on a miss
+|       +-- dedupe.ts                   [ ] P2  exact-duplicate soft reject
+|       +-- scanner.ts                  [ ] P2  *** INJECTION / EXFIL / INVISIBLE
+|       |                                       UNICODE. SHIPS WITH TESTS. ***
+|       +-- approval.ts                 [ ] P2  staging, pinned targets, apply/reject
+|       +-- render.ts                   [ ] P2  the system-prompt block
+|       +-- vector.ts                   [-] P4  sqlite-vec semantic recall
+|
++-- tools/                              THE EIGHT TOOLS
+|   +-- src/
+|       +-- registry.ts                 [ ] P3  schema export for the provider call
+|       +-- fs/
+|       |   +-- read_file.ts            [ ] P3
+|       |   +-- write_file.ts           [ ] P3
+|       |   +-- edit_file.ts            [ ] P3  exact-string replace
+|       |   +-- list_dir.ts             [ ] P3
+|       |   +-- glob.ts                 [ ] P3
+|       |   +-- allowlist.ts            [ ] P3  *** ROOT GUARD. NO ESCAPE. ***
+|       +-- shell/
+|       |   +-- run_command.ts          [ ] P3  PTY, streamed, cancellable
+|       |   +-- pty.ts                  [ ] P3  ConPTY on Windows, forkpty elsewhere
+|       |   +-- output_cap.ts           [ ] P3  cap + spill to file
+|       +-- render/
+|       |   +-- mermaid.ts              [ ] P4  headless render -> SVG (PLAN §5.8)
+|       |   +-- browser_detect.ts       [ ] P4  find system Chromium; NEVER bundle
+|       |   +-- sandbox.ts              [ ] P4  no network, tmpdir, timeout, cap
+|       +-- search/
+|       |   +-- grep.ts                 [ ] P3  ripgrep if present, JS fallback
+|       |   +-- web_search.ts           [-] P4  optional, provider-keyed
+|       +-- recall/
+|           +-- session_search.ts       [ ] P3  discovery / scroll / browse
+|
++-- shared/
+    +-- src/
+        +-- result.ts                   [x] P0  Result/AppError/ErrorCode
+        +-- logger.ts                   [x] P0  stderr only, redacts secrets
+        +-- paths.ts                    [ ] P0  ~/.rudra per OS; ONE profileRoot()
+        |                                       so multi-profile stays possible
+        +-- config_schema.ts            [ ] P1  TypeBox shape for config.toml
+        +-- ids.ts                      [x] P0  sortable ULID + session token
+
+===============================================================================
+ tooling/  --  CODEGEN AND BUILD
+===============================================================================
+
+tooling/
++-- schema-to-dart/
+|   +-- index.ts                        [x] P0  TypeBox -> Dart, --check mode
+|   |                                   *** FAILS THE BUILD ON DRIFT ***
++-- build-sidecar.ts                    [ ] P0  bun build --compile, 3 targets
++-- bundle-app.ts                       [ ] P4  sidecar into the Flutter bundle
++-- (size measured in CI)               [x] P0  94.7 MB -> PLAN.MD §3
++-- smoke/
+|   +-- index.ts                        [x] P0  19-check subprocess report
++-- fixtures/
+    +-- token_replay.jsonl              [ ] P1  canned stream for streaming_text
+
+===============================================================================
+ docs/
+===============================================================================
+
+docs/
++-- ui-guidelines.md                    [x] P0  *** THE UI CONTRACT - READ FIRST ***
++-- decisions/                          [~] P0  0001-phase-0-stack.md
++-- memory-model.md                     [ ] P2  our rules + Hermes attribution
++-- security.md                         [ ] P3  threat model: loopback, tools, memory
++-- building.md                         [ ] P4  per-OS build instructions
+
+===============================================================================
+ CRITICAL PATH  --  P0: COMPLETE (2026-10-26)
+   bun run smoke     -> 19/19 passed
+   bun run check     -> fmt + lint + types + codegen drift + 14 tests, green
+   bun run app:check -> flutter analyze clean + 21 tests, green
+   real app launch   -> spawns sidecar as a child; no orphan on kill
+===============================================================================
+
+ [x] 1. bun workspaces root + tsconfig.base            packages/, server/, app/
+ [x] 2. shared/paths + result + logger                 everything imports these
+ [x] 3. server: bind :0, print {port, token}           server/src/index.ts
+ [x] 4. flutter: spawn sidecar, read handshake         app/lib/boot/
+ [x] 5. contracts: first TypeBox schema                packages/contracts/
+ [x] 6. tooling/schema-to-dart, wired to fail build    tooling/schema-to-dart/
+ [x] 7. SSE echo: server -> Dart, end to end           proves the whole spine
+ [x] 8. CI on all 3 OSes + measure-size                de-risks P4 at zero cost
+
+ Nothing in P1 starts until 7 and 8 are green.  <- both green.
+
+===============================================================================
+ LOAD-BEARING INVARIANTS  --  breaking one of these is a bug, not a tradeoff
+===============================================================================
+
+ [x] 1. The memory block in the system prompt is FROZEN for a session's lifetime.
+    Only compaction may ever invalidate the prefix cache.          PLAN §5.2
+ [x] 2. The sidecar binds port 0 and requires a token. Never a fixed port.
+    It has shell access; the browser must not be able to reach it. PLAN §8
+ [x] 3. Memory writes are checked on the BATCH result, and a full store
+    returns an actionable error - never a silent truncation.       PLAN §5.3
+ [x] 4. Every memory entry passes the security scanner before it is
+    accepted. Memory is a persistent injection vector.            PLAN §5.3
+ [x] 5. Filesystem tools cannot read or write outside the allowlist.   PLAN §8
+ [x] 6. A crash loses at most 250 ms of tokens, and a partial message
+    is never presented as a complete one.                         PLAN §7
+ [x] 7. `rm cache.db` is always safe and never touches user data.      PLAN §6
+ [x] 8. The .md memory files are the human source of truth; on a
+    file-vs-DB conflict, the FILE wins.                            PLAN §6
+ 9. The tool list is closed at eight. Additions cost tokens on
+    every single API call.                                        PLAN §4.3
+10. Dart types are GENERATED from contracts/. Hand-written DTOs
+    are the drift we left Python to avoid.                        PLAN §3
+11. A streaming token delta NEVER rebuilds the transcript. It goes
+    to that message's ValueNotifier. This is the perf bug we are
+    most likely to ship.                                 UI-GUIDELINES §11
+12. ONE primitive per concern. A forked button at a call site is
+    a bug, not a shortcut.                                UI-GUIDELINES §1
+13. No raw color/shadow/radius/duration literal in any widget.
+    Everything resolves through the ThemeExtension.      UI-GUIDELINES §13
+14. Every surface ships its empty, sparse, dense AND error state.
+    Happy-path-only is incomplete.                        UI-GUIDELINES §7
+15. Every path resolves through profileRoot(); rows carry
+    profile_id. Multi-profile is deferred, not precluded.      PLAN §11.4
+16. We NEVER bundle a browser engine for mermaid. System browser
+    or honest degradation.                                      PLAN §5.8
+17. Mermaid source is untrusted model output: securityLevel
+    strict, htmlLabels off, no network, timeout + size cap.     PLAN §5.8
+18. stdout belongs to the handshake line ALONE. All logging goes
+    to stderr or the app log file.                               PLAN §8
+19. EVERY buffer that grows from input off a socket or a pipe has
+    a named ceiling in limits.ts/limits.dart -- never an inline
+    number, never "big enough". That includes our own sidecar: a
+    wedged or downgraded backend is the case a bound is FOR.
+    Enforced by app/test/safety_test.dart.                  SAFETY, PLAN §8
+20. Wire data is read by a typed reader, never by a cast. A field
+    of the wrong type raises WireTypeError NAMING THE FIELD and
+    leaves by a designed route; it never crashes an async* body.
+    fromJson is generated, so this holds for every contract.
+    Enforced by app/test/safety_test.dart.               SAFETY, INVARIANT 10
+
+===============================================================================

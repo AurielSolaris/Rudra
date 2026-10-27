@@ -1,0 +1,10 @@
+{
+   "name": "@rudra/schema-to-dart",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "dependencies": {
+      "@rudra/contracts": "workspace:*",
+      "@sinclair/typebox": "0.34.33"
+   }
+}

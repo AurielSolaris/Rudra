@@ -1,0 +1,10 @@
+# Tag definitions.
+#
+# `spine` marks the end-to-end test that spawns the real backend. It needs
+# `bun` on PATH, so it is excluded from the default run and invoked explicitly
+# by `bun run app:spine`.
+tags:
+  spine:
+    description: End-to-end tests that spawn the real sidecar.
+  preview:
+    description: Renders the UI to build/preview/*.png. Not assertions.

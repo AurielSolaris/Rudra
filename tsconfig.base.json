@@ -1,0 +1,32 @@
+{
+   "$schema": "https://json.schemastore.org/tsconfig",
+   "compilerOptions": {
+      "target": "ESNext",
+      "module": "Preserve",
+      "moduleResolution": "bundler",
+      "moduleDetection": "force",
+      // DOM is here for the web primitives we genuinely use — Request, Response,
+      // ReadableStream, HeadersInit, fetch — not because anything renders.
+      "lib": ["ESNext", "DOM", "DOM.Iterable"],
+      "types": ["bun"],
+
+      // Bun executes TypeScript directly, so nothing is ever emitted and imports
+      // keep their `.ts` extension (which is also what Node's ESM resolver wants
+      // to see spelled out).
+      "noEmit": true,
+      "allowImportingTsExtensions": true,
+
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "exactOptionalPropertyTypes": true,
+      "noImplicitOverride": true,
+      "noFallthroughCasesInSwitch": true,
+      "noPropertyAccessFromIndexSignature": true,
+      "useUnknownInCatchVariables": true,
+      "verbatimModuleSyntax": true,
+
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "isolatedModules": true
+   }
+}

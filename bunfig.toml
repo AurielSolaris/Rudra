@@ -1,0 +1,6 @@
+# Bun workspace configuration.
+
+[install]
+# Exact versions only. A desktop app ships a lockfile; a caret range in a
+# sidecar is a reproducibility problem, not a convenience.
+exact = true

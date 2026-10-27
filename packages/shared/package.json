@@ -1,0 +1,13 @@
+{
+   "name": "@rudra/shared",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "exports": {
+      "./result": "./src/result.ts",
+      "./logger": "./src/logger.ts",
+      "./paths": "./src/paths.ts",
+      "./ids": "./src/ids.ts",
+      "./limits": "./src/limits.ts"
+   }
+}

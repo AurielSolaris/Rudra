@@ -1,0 +1,11 @@
+{
+   "version": 1,
+   "skills": {
+      "elysiajs": {
+         "source": "elysiajs/skills",
+         "sourceType": "github",
+         "skillPath": "elysia/SKILL.md",
+         "computedHash": "96f649408f6ad33721968a123e28c935dec8d3356e6de36b4906bc76c9c904fc"
+      }
+   }
+}

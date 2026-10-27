@@ -1,0 +1,9 @@
+{
+   "name": "@rudra/smoke",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "dependencies": {
+      "@rudra/contracts": "workspace:*"
+   }
+}

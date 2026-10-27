@@ -1,0 +1,111 @@
+name: CI
+
+# Three OSes from Phase 0 on purpose (MAP.txt critical path, step 8). Linux-only
+# CI would hide Windows path handling and macOS process behaviour until
+# packaging, which is the worst time to find them.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # Format, lint, types, codegen drift, unit tests.
+      - name: Check
+        run: bun run check
+
+      # The subprocess proof: handshake, port/token, SSE over a real socket,
+      # stdout discipline, shutdown. Cannot be covered in-process.
+      - name: Smoke
+        run: bun run smoke
+
+  app:
+    name: app (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          channel: stable
+          cache: true
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Resolve Dart dependencies
+        working-directory: app
+        run: flutter pub get
+
+      # Formatting, analysis, and the widget/unit suites. The format check is
+      # routed through tooling/fmt-dart so it skips lib/api/generated — that
+      # directory is written by the generator, and `dart format` disagrees with
+      # it permanently.
+      - name: Check
+        run: bun run app:check
+
+      # The end-to-end suite: a real sidecar process, a real socket, real SSE.
+      # Tagged `spine` so it stays out of the fast suite above.
+      - name: Spine
+        run: bun run app:spine
+
+  size:
+    name: sidecar size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+
+      # PLAN.MD §3 names sidecar size as a risk to measure in Phase 0 rather
+      # than discover at packaging. This job reports it on every run; it does
+      # not fail, because the number is information, not a gate yet.
+      #
+      # Measured at 94.7 MB. `--minify --bytecode` makes it *larger* (98.1 MB):
+      # the bulk is the embedded Bun runtime, not our code.
+      - name: Compile and measure
+        run: |
+          bun build server/src/index.ts --compile --outfile rudra-sidecar
+          SIZE=$(stat -c%s rudra-sidecar)
+          MB=$(awk "BEGIN { printf \"%.1f\", $SIZE/1048576 }")
+          echo "Sidecar binary: ${MB} MB (${SIZE} bytes)"
+          {
+            echo "### Sidecar size"
+            echo ""
+            echo "\`${MB} MB\` — PLAN.MD §3 records a measured 94.7 MB; the weight is the Bun runtime."
+          } >> "$GITHUB_STEP_SUMMARY"
