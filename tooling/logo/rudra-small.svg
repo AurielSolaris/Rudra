@@ -1,0 +1,50 @@
+<!--
+  Rudra's mark at small sizes: the ocellus alone.
+
+  Below about 64px the plume in `rudra.svg` collapses into a grey smudge and
+  the silhouette reads as a map pin rather than a feather. This file keeps what
+  survives downsampling — the four concentric bands of the eye — and drops what
+  does not. Shipping distinct artwork for small sizes is what macOS and Windows
+  icon sets have always done; it is not a workaround.
+
+  Edit both files together, or the icon changes character halfway down the size
+  ladder.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="barb" x1="256" y1="16" x2="256" y2="264" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A8D2FB"/>
+      <stop offset="1" stop-color="#38C8F8"/>
+    </linearGradient>
+    <radialGradient id="bronze" cx="256" cy="264" r="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0.62" stop-color="#D4A655"/>
+      <stop offset="1" stop-color="#9A7230"/>
+    </radialGradient>
+    <radialGradient id="teal" cx="256" cy="260" r="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0.3" stop-color="#25B9A0"/>
+      <stop offset="1" stop-color="#0D6C78"/>
+    </radialGradient>
+    <radialGradient id="azure" cx="212" cy="222" r="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#58D6F8"/>
+      <stop offset="0.52" stop-color="#0B57BE"/>
+      <stop offset="1" stop-color="#083C8E"/>
+    </radialGradient>
+    <radialGradient id="heart" cx="206" cy="214" r="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#36469A"/>
+      <stop offset="1" stop-color="#0A1234"/>
+    </radialGradient>
+  </defs>
+
+  <g stroke="url(#barb)" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M 101.5 143.3 L 66.9 116.2" stroke-width="16"/>
+    <path d="M 167 89.4 L 147 50.2" stroke-width="16"/>
+    <path d="M 345 89.4 L 365 50.2" stroke-width="16"/>
+    <path d="M 410.5 143.3 L 445.1 116.2" stroke-width="16"/>
+  </g>
+  <path d="M 256 496 L 256 400" stroke="#CFE2FB" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+
+  <ellipse cx="256" cy="264" rx="228" ry="208" fill="url(#bronze)"/>
+  <ellipse cx="256" cy="260" rx="186" ry="166" fill="url(#teal)"/>
+  <ellipse cx="256" cy="256" rx="146" ry="128" fill="url(#azure)"/>
+  <path d="M 256 196 C 247 166 206 148 174 168 C 134 193 128 254 152 299 C 173 338 216 366 256 380 C 296 366 339 338 360 299 C 384 254 378 193 338 168 C 306 148 265 166 256 196 Z" fill="url(#heart)" transform="translate(256 262) scale(0.76) translate(-256 -262)"/>
+</svg>

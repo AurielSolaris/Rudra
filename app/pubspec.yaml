@@ -27,3 +27,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Rasterized from tooling/logo/rudra.svg by `bun run logo`. Never edit the
+  # PNGs: `bun run logo:check` fails the build when they drift from the SVG.
+  assets:
+    - assets/logo/

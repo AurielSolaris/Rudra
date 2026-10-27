@@ -70,7 +70,14 @@ export function unauthorizedResponse(result: AuthResult, path: string): Response
       { code: 'unauthorized', message: 'Missing or invalid token.' },
       {
          status: 401,
-         headers: { 'www-authenticate': 'Bearer', 'cache-control': 'no-store' },
+         // `connection: close` for the same reason as every other pre-body
+         // refusal — see REFUSAL_HEADERS in app.ts. An unauthenticated POST's
+         // body is never read, so the connection must not be reused.
+         headers: {
+            'www-authenticate': 'Bearer',
+            'cache-control': 'no-store',
+            connection: 'close',
+         },
       },
    );
 }

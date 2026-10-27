@@ -33,7 +33,11 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      # Format, lint, types, codegen drift, unit tests.
+      # Format, lint, types, codegen drift, logo drift, unit tests.
+      #
+      # `logo:check` rasterizes tooling/logo/*.svg and compares against the
+      # committed icons, so a hand-edited PNG fails the build the same way a
+      # hand-edited Dart model does.
       - name: Check
         run: bun run check
 

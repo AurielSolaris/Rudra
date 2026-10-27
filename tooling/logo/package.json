@@ -1,0 +1,9 @@
+{
+   "name": "@rudra/logo",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "dependencies": {
+      "@resvg/resvg-js": "2.6.2"
+   }
+}
