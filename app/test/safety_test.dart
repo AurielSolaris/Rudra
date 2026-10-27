@@ -203,7 +203,9 @@ void main() {
     // round trip in both directions.
     Map<String, dynamic> session(String id, String? title) => <String, dynamic>{
       'id': id,
-      if (title != null) 'title': title,
+      // Null-aware element: omits the entry entirely when title is null, which
+      // is what an absent optional looks like on the wire.
+      'title': ?title,
       'state': 'active',
       'createdAt': 1700000000000,
       'updatedAt': 1700000000001,
