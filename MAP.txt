@@ -163,7 +163,8 @@ server/
 |   +-- sse.ts                          [x] P0  generator -> SSE + parseSse
 |   +-- errors.ts                       [x] P0  AppError -> HTTP status
 |   +-- version.ts                      [x] P0  one source for the version
-|   +-- config.ts                       [ ] P1  TOML at ~/.rudra/config.toml
+|   +-- config.ts                       [x] P1  TOML at ~/.rudra/config.toml; a bad
+|   |                                           file degrades, never blocks boot
 |   +-- keychain.ts                     [ ] P1  OS keychain bridge for API keys
 |
 +-- test/                               [x] P0  14 tests, no port needed
@@ -219,11 +220,13 @@ packages/
 |   |   +-- background_review.ts        [-] P4  post-turn self-curation (PLAN §5.7)
 |   |
 |   +-- providers/
-|       +-- types.ts                    [ ] P1  the one interface all adapters meet
-|       +-- openai_compatible.ts        [ ] P1  covers Portal/OpenRouter/Ollama/vLLM
+|       +-- types.ts                    [x] P1  the one interface all adapters meet
+|       +-- openai_compatible.ts        [x] P1  covers Portal/OpenRouter/Ollama/vLLM
+|       |                                       bounded frame/message/error reads
 |       +-- anthropic.ts                [ ] P3  native
 |       +-- gemini.ts                   [ ] P3  native
-|       +-- registry.ts                 [ ] P1
+|       +-- registry.ts                 [x] P1  adapters + in-memory keys only
+|       +-- (test)                      [x] P1  19 tests; no network, no key
 |
 +-- memory/                             THE CURATED STORES
 |   +-- src/
@@ -269,7 +272,7 @@ packages/
         +-- logger.ts                   [x] P0  stderr only, redacts secrets
         +-- paths.ts                    [ ] P0  ~/.rudra per OS; ONE profileRoot()
         |                                       so multi-profile stays possible
-        +-- config_schema.ts            [ ] P1  TypeBox shape for config.toml
+        +-- config_schema.ts            [x] P1  TypeBox shape for config.toml
         +-- ids.ts                      [x] P0  sortable ULID + session token
 
 ===============================================================================

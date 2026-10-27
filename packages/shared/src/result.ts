@@ -133,3 +133,40 @@ export function describeCause(cause: unknown): string {
       return String(cause);
    }
 }
+
+/**
+ * An `AppError` travelling as an exception.
+ *
+ * Nothing in Rudra throws where it could return a `Result` — but an async
+ * generator is the one place that rule cannot reach. A streaming provider
+ * yields events, and "the stream died" is not an event the consumer should
+ * have to pattern-match on; a throw is what unwinds the `for await` and runs
+ * the `finally` that closes the socket.
+ *
+ * So the failure still travels as a typed value, wrapped in a real `Error` so
+ * it carries a stack and answers to `instanceof`. Throwing a bare object loses
+ * both, and `catch (e) { e.message }` on one is how you get `undefined` in a
+ * log at three in the morning.
+ */
+export class AppErrorException extends Error {
+   constructor(readonly error: AppError) {
+      super(error.message);
+      this.name = 'AppErrorException';
+   }
+}
+
+/** Throw an `AppError`. Returns `never`, so it satisfies exhaustiveness checks. */
+export function throwApp(error: AppError): never {
+   throw new AppErrorException(error);
+}
+
+/**
+ * Recover the `AppError` from a caught value.
+ *
+ * Returns an `internal` error for anything that is not one of ours, so a
+ * caller never has to decide what an unknown throw means.
+ */
+export function toAppError(cause: unknown): AppError {
+   if (cause instanceof AppErrorException) return cause.error;
+   return appError(ErrorCode.Internal, 'Unexpected failure.', { cause });
+}

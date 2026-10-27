@@ -8,6 +8,10 @@
       "./logger": "./src/logger.ts",
       "./paths": "./src/paths.ts",
       "./ids": "./src/ids.ts",
-      "./limits": "./src/limits.ts"
+      "./limits": "./src/limits.ts",
+      "./config_schema": "./src/config_schema.ts"
+   },
+   "dependencies": {
+      "@sinclair/typebox": "0.34.33"
    }
 }

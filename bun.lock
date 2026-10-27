@@ -21,6 +21,15 @@
         "@sinclair/typebox": "0.34.33",
       },
     },
+    "packages/core": {
+      "name": "@rudra/core",
+      "version": "0.0.0",
+      "dependencies": {
+        "@rudra/contracts": "workspace:*",
+        "@rudra/db": "workspace:*",
+        "@rudra/shared": "workspace:*",
+      },
+    },
     "packages/db": {
       "name": "@rudra/db",
       "version": "0.0.0",
@@ -32,6 +41,9 @@
     "packages/shared": {
       "name": "@rudra/shared",
       "version": "0.0.0",
+      "dependencies": {
+        "@sinclair/typebox": "0.34.33",
+      },
     },
     "server": {
       "name": "@rudra/server",
@@ -134,6 +146,8 @@
     "@resvg/resvg-js-win32-x64-msvc": ["@resvg/resvg-js-win32-x64-msvc@2.6.2", "", { "os": "win32", "cpu": "x64" }, "sha512-ZXtYhtUr5SSaBrUDq7DiyjOFJqBVL/dOBN7N/qmi/pO0IgiWW/f/ue3nbvu9joWE5aAKDoIzy/CxsY0suwGosQ=="],
 
     "@rudra/contracts": ["@rudra/contracts@workspace:packages/contracts"],
+
+    "@rudra/core": ["@rudra/core@workspace:packages/core"],
 
     "@rudra/db": ["@rudra/db@workspace:packages/db"],
 

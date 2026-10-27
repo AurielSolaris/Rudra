@@ -1,0 +1,21 @@
+{
+   "name": "@rudra/core",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "exports": {
+      "./providers": "./providers/registry.ts",
+      "./providers/types": "./providers/types.ts",
+      "./providers/openai": "./providers/openai_compatible.ts",
+      "./autosave": "./src/autosave.ts",
+      "./interrupt": "./src/interrupt.ts",
+      "./context": "./src/context.ts",
+      "./system_prompt": "./src/system_prompt.ts",
+      "./loop": "./src/loop.ts"
+   },
+   "dependencies": {
+      "@rudra/contracts": "workspace:*",
+      "@rudra/db": "workspace:*",
+      "@rudra/shared": "workspace:*"
+   }
+}

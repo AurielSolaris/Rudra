@@ -14,7 +14,7 @@
       "dev": "bun --watch server/src/index.ts",
       "smoke": "bun run tooling/smoke/index.ts",
       "test": "bun test",
-      "typecheck": "tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p tooling/schema-to-dart/tsconfig.json && tsc --noEmit -p tooling/smoke/tsconfig.json && tsc --noEmit -p tooling/fmt-dart/tsconfig.json && tsc --noEmit -p tooling/logo/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json",
+      "typecheck": "tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p tooling/schema-to-dart/tsconfig.json && tsc --noEmit -p tooling/smoke/tsconfig.json && tsc --noEmit -p tooling/fmt-dart/tsconfig.json && tsc --noEmit -p tooling/logo/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/core/tsconfig.json",
       "lint": "eslint .",
       "lint:fix": "eslint . --fix",
       "fmt": "prettier --write .",
