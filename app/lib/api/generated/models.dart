@@ -155,6 +155,49 @@ List<T>? _optTypedList<T>(Map<String, dynamic> j, String f) {
   return List<T>.generate(raw.length, (i) => _item<T>(raw, i, f));
 }
 
+/// Reader for a list of nested contract objects.
+///
+/// [_reqTypedList] cannot do this job: its elements arrive as
+/// `Map<String, dynamic>`, so an `is T` test against a generated class is
+/// false for every element and the whole list fails. Each element is decoded
+/// through its own `fromJson`, which applies the same discipline one level down.
+List<T> _reqObjList<T>(
+  Map<String, dynamic> j,
+  String f,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  final raw = _reqList(j, f);
+  return List<T>.generate(raw.length, (i) {
+    final v = raw[i];
+    if (v is Map) return fromJson(Map<String, dynamic>.from(v));
+    return _bad('$f[$i]', 'an object', v);
+  });
+}
+
+List<T>? _optObjList<T>(
+  Map<String, dynamic> j,
+  String f,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  if (j[f] == null) return null;
+  return _reqObjList<T>(j, f, fromJson);
+}
+
+/// Reader for a list of enum members, decoded through the enum's own wire map.
+List<T> _reqEnumList<T>(Map<String, dynamic> j, String f, T Function(String) fromWire) {
+  final raw = _reqList(j, f);
+  return List<T>.generate(raw.length, (i) {
+    final v = raw[i];
+    if (v is String) return fromWire(v);
+    return _bad('$f[$i]', 'a string', v);
+  });
+}
+
+List<T>? _optEnumList<T>(Map<String, dynamic> j, String f, T Function(String) fromWire) {
+  if (j[f] == null) return null;
+  return _reqEnumList<T>(j, f, fromWire);
+}
+
 
 // Id: scalar alias (string), no class emitted.
 
@@ -243,6 +286,487 @@ class HealthResponse {
       };
 }
 
+/// Lifecycle of a session. Only an active session accepts new turns.
+enum SessionState {
+  active('active'),
+  ended('ended'),
+  archived('archived'),
+  ;
+
+  const SessionState(this.wire);
+
+  /// The exact string on the wire.
+  final String wire;
+
+  static SessionState fromWire(String value, [String field = 'sessionState']) =>
+      tryFromWire(value) ??
+      _bad(field, 'one of ${SessionState.values.map((e) => e.wire).join(', ')}', value);
+
+  /// Null rather than an exception for an unrecognised value.
+  static SessionState? tryFromWire(String value) {
+    for (final e in SessionState.values) {
+      if (e.wire == value) return e;
+    }
+    return null;
+  }
+}
+
+@immutable
+class Session {
+  const Session({
+    required this.id,
+    this.title,
+    required this.state,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.provider,
+    required this.model,
+    required this.messageCount,
+    required this.tokensIn,
+    required this.tokensOut,
+  });
+
+  factory Session.fromJson(Map<String, dynamic> json) => Session(
+        id: _reqStr(json, 'id'),
+        title: _optStr(json, 'title'),
+        state: SessionState.fromWire(_reqStr(json, 'state'), 'state'),
+        createdAt: _reqInt(json, 'createdAt'),
+        updatedAt: _reqInt(json, 'updatedAt'),
+        provider: _reqStr(json, 'provider'),
+        model: _reqStr(json, 'model'),
+        messageCount: _reqInt(json, 'messageCount'),
+        tokensIn: _reqInt(json, 'tokensIn'),
+        tokensOut: _reqInt(json, 'tokensOut'),
+      );
+
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String id;
+  final String? title;
+  /// Lifecycle of a session. Only an active session accepts new turns.
+  final SessionState state;
+  final int createdAt;
+  final int updatedAt;
+  final String provider;
+  final String model;
+  final int messageCount;
+  final int tokensIn;
+  final int tokensOut;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        if (title != null) 'title': title,
+        'state': state.wire,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+        'provider': provider,
+        'model': model,
+        'messageCount': messageCount,
+        'tokensIn': tokensIn,
+        'tokensOut': tokensOut,
+      };
+}
+
+@immutable
+class SessionList {
+  const SessionList({
+    required this.sessions,
+    this.nextCursor,
+  });
+
+  factory SessionList.fromJson(Map<String, dynamic> json) => SessionList(
+        sessions: _reqObjList<Session>(json, 'sessions', Session.fromJson),
+        nextCursor: _optStr(json, 'nextCursor'),
+      );
+
+  final List<Session> sessions;
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String? nextCursor;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'sessions': sessions.map((e) => e.toJson()).toList(),
+        if (nextCursor != null) 'nextCursor': nextCursor,
+      };
+}
+
+@immutable
+class CreateSessionRequest {
+  const CreateSessionRequest({
+    this.provider,
+    this.model,
+    this.title,
+  });
+
+  factory CreateSessionRequest.fromJson(Map<String, dynamic> json) => CreateSessionRequest(
+        provider: _optStr(json, 'provider'),
+        model: _optStr(json, 'model'),
+        title: _optStr(json, 'title'),
+      );
+
+  final String? provider;
+  final String? model;
+  final String? title;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        if (provider != null) 'provider': provider,
+        if (model != null) 'model': model,
+        if (title != null) 'title': title,
+      };
+}
+
+@immutable
+class RenameSessionRequest {
+  const RenameSessionRequest({
+    required this.title,
+  });
+
+  factory RenameSessionRequest.fromJson(Map<String, dynamic> json) => RenameSessionRequest(
+        title: _reqStr(json, 'title'),
+      );
+
+  final String title;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'title': title,
+      };
+}
+
+/// Who produced the message.
+enum MessageRole {
+  system('system'),
+  user('user'),
+  assistant('assistant'),
+  tool('tool'),
+  ;
+
+  const MessageRole(this.wire);
+
+  /// The exact string on the wire.
+  final String wire;
+
+  static MessageRole fromWire(String value, [String field = 'messageRole']) =>
+      tryFromWire(value) ??
+      _bad(field, 'one of ${MessageRole.values.map((e) => e.wire).join(', ')}', value);
+
+  /// Null rather than an exception for an unrecognised value.
+  static MessageRole? tryFromWire(String value) {
+    for (final e in MessageRole.values) {
+      if (e.wire == value) return e;
+    }
+    return null;
+  }
+}
+
+/// Why generation stopped.
+enum FinishReason {
+  complete('complete'),
+  interrupted('interrupted'),
+  length('length'),
+  error('error'),
+  toolCalls('tool_calls'),
+  ;
+
+  const FinishReason(this.wire);
+
+  /// The exact string on the wire.
+  final String wire;
+
+  static FinishReason fromWire(String value, [String field = 'finishReason']) =>
+      tryFromWire(value) ??
+      _bad(field, 'one of ${FinishReason.values.map((e) => e.wire).join(', ')}', value);
+
+  /// Null rather than an exception for an unrecognised value.
+  static FinishReason? tryFromWire(String value) {
+    for (final e in FinishReason.values) {
+      if (e.wire == value) return e;
+    }
+    return null;
+  }
+}
+
+@immutable
+class Message {
+  const Message({
+    required this.id,
+    required this.sessionId,
+    required this.role,
+    required this.content,
+    required this.createdAt,
+    required this.seq,
+    this.finishReason,
+    this.tokensIn,
+    this.tokensOut,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) => Message(
+        id: _reqStr(json, 'id'),
+        sessionId: _reqStr(json, 'sessionId'),
+        role: MessageRole.fromWire(_reqStr(json, 'role'), 'role'),
+        content: _reqStr(json, 'content'),
+        createdAt: _reqInt(json, 'createdAt'),
+        seq: _reqInt(json, 'seq'),
+        finishReason: json['finishReason'] == null ? null : FinishReason.fromWire(_reqStr(json, 'finishReason'), 'finishReason'),
+        tokensIn: _optInt(json, 'tokensIn'),
+        tokensOut: _optInt(json, 'tokensOut'),
+      );
+
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String id;
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String sessionId;
+  /// Who produced the message.
+  final MessageRole role;
+  final String content;
+  final int createdAt;
+  final int seq;
+  /// Why generation stopped.
+  final FinishReason? finishReason;
+  final int? tokensIn;
+  final int? tokensOut;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'sessionId': sessionId,
+        'role': role.wire,
+        'content': content,
+        'createdAt': createdAt,
+        'seq': seq,
+        if (finishReason != null) 'finishReason': finishReason!.wire,
+        if (tokensIn != null) 'tokensIn': tokensIn,
+        if (tokensOut != null) 'tokensOut': tokensOut,
+      };
+}
+
+@immutable
+class MessagePage {
+  const MessagePage({
+    required this.messages,
+    this.nextCursor,
+  });
+
+  factory MessagePage.fromJson(Map<String, dynamic> json) => MessagePage(
+        messages: _reqObjList<Message>(json, 'messages', Message.fromJson),
+        nextCursor: _optInt(json, 'nextCursor'),
+      );
+
+  final List<Message> messages;
+  final int? nextCursor;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'messages': messages.map((e) => e.toJson()).toList(),
+        if (nextCursor != null) 'nextCursor': nextCursor,
+      };
+}
+
+/// Which adapter drives this provider.
+enum ProviderKind {
+  openaiCompatible('openai_compatible'),
+  anthropic('anthropic'),
+  gemini('gemini'),
+  ;
+
+  const ProviderKind(this.wire);
+
+  /// The exact string on the wire.
+  final String wire;
+
+  static ProviderKind fromWire(String value, [String field = 'providerKind']) =>
+      tryFromWire(value) ??
+      _bad(field, 'one of ${ProviderKind.values.map((e) => e.wire).join(', ')}', value);
+
+  /// Null rather than an exception for an unrecognised value.
+  static ProviderKind? tryFromWire(String value) {
+    for (final e in ProviderKind.values) {
+      if (e.wire == value) return e;
+    }
+    return null;
+  }
+}
+
+@immutable
+class Provider {
+  const Provider({
+    required this.id,
+    required this.kind,
+    required this.label,
+    required this.baseUrl,
+    required this.defaultModel,
+    required this.contextWindow,
+    required this.maxTokens,
+    required this.temperature,
+    required this.supportsTools,
+    required this.hasKey,
+  });
+
+  factory Provider.fromJson(Map<String, dynamic> json) => Provider(
+        id: _reqStr(json, 'id'),
+        kind: ProviderKind.fromWire(_reqStr(json, 'kind'), 'kind'),
+        label: _reqStr(json, 'label'),
+        baseUrl: _reqStr(json, 'baseUrl'),
+        defaultModel: _reqStr(json, 'defaultModel'),
+        contextWindow: _reqInt(json, 'contextWindow'),
+        maxTokens: _reqInt(json, 'maxTokens'),
+        temperature: _reqNum(json, 'temperature'),
+        supportsTools: _reqBool(json, 'supportsTools'),
+        hasKey: _reqBool(json, 'hasKey'),
+      );
+
+  final String id;
+  /// Which adapter drives this provider.
+  final ProviderKind kind;
+  final String label;
+  final String baseUrl;
+  final String defaultModel;
+  final int contextWindow;
+  final int maxTokens;
+  final double temperature;
+  final bool supportsTools;
+  final bool hasKey;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'kind': kind.wire,
+        'label': label,
+        'baseUrl': baseUrl,
+        'defaultModel': defaultModel,
+        'contextWindow': contextWindow,
+        'maxTokens': maxTokens,
+        'temperature': temperature,
+        'supportsTools': supportsTools,
+        'hasKey': hasKey,
+      };
+}
+
+@immutable
+class ProviderList {
+  const ProviderList({
+    required this.providers,
+    required this.defaultProvider,
+  });
+
+  factory ProviderList.fromJson(Map<String, dynamic> json) => ProviderList(
+        providers: _reqObjList<Provider>(json, 'providers', Provider.fromJson),
+        defaultProvider: _reqStr(json, 'defaultProvider'),
+      );
+
+  final List<Provider> providers;
+  final String defaultProvider;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'providers': providers.map((e) => e.toJson()).toList(),
+        'defaultProvider': defaultProvider,
+      };
+}
+
+@immutable
+class ModelInfo {
+  const ModelInfo({
+    required this.id,
+    this.label,
+  });
+
+  factory ModelInfo.fromJson(Map<String, dynamic> json) => ModelInfo(
+        id: _reqStr(json, 'id'),
+        label: _optStr(json, 'label'),
+      );
+
+  final String id;
+  final String? label;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        if (label != null) 'label': label,
+      };
+}
+
+@immutable
+class ModelList {
+  const ModelList({
+    required this.models,
+    required this.discovered,
+  });
+
+  factory ModelList.fromJson(Map<String, dynamic> json) => ModelList(
+        models: _reqObjList<ModelInfo>(json, 'models', ModelInfo.fromJson),
+        discovered: _reqBool(json, 'discovered'),
+      );
+
+  final List<ModelInfo> models;
+  final bool discovered;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'models': models.map((e) => e.toJson()).toList(),
+        'discovered': discovered,
+      };
+}
+
+@immutable
+class ProviderCheck {
+  const ProviderCheck({
+    required this.ok,
+    this.error,
+    this.latencyMs,
+  });
+
+  factory ProviderCheck.fromJson(Map<String, dynamic> json) => ProviderCheck(
+        ok: _reqBool(json, 'ok'),
+        error: json['error'] == null ? null : ApiError.fromJson(_reqMap(json, 'error')),
+        latencyMs: _optInt(json, 'latencyMs'),
+      );
+
+  final bool ok;
+  final ApiError? error;
+  final int? latencyMs;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'ok': ok,
+        if (error != null) 'error': error!.toJson(),
+        if (latencyMs != null) 'latencyMs': latencyMs,
+      };
+}
+
+@immutable
+class SetCredentialRequest {
+  const SetCredentialRequest({
+    required this.providerId,
+    required this.apiKey,
+  });
+
+  factory SetCredentialRequest.fromJson(Map<String, dynamic> json) => SetCredentialRequest(
+        providerId: _reqStr(json, 'providerId'),
+        apiKey: _reqStr(json, 'apiKey'),
+      );
+
+  final String providerId;
+  final String apiKey;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'providerId': providerId,
+        'apiKey': apiKey,
+      };
+}
+
+@immutable
+class ChatRequest {
+  const ChatRequest({
+    required this.sessionId,
+    required this.message,
+  });
+
+  factory ChatRequest.fromJson(Map<String, dynamic> json) => ChatRequest(
+        sessionId: _reqStr(json, 'sessionId'),
+        message: _reqStr(json, 'message'),
+      );
+
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String sessionId;
+  final String message;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'sessionId': sessionId,
+        'message': message,
+      };
+}
+
 @immutable
 class EchoRequest {
   const EchoRequest({
@@ -273,21 +797,30 @@ class StreamStart extends StreamEvent {
   const StreamStart({
     required this.type,
     required this.messageId,
+    this.sessionId,
+    this.seq,
   });
 
   factory StreamStart.fromJson(Map<String, dynamic> json) => StreamStart(
         type: _reqStr(json, 'type'),
         messageId: _reqStr(json, 'messageId'),
+        sessionId: _optStr(json, 'sessionId'),
+        seq: _optInt(json, 'seq'),
       );
 
   final String type;
   /// Sortable 26-character identifier (ULID layout, Crockford base32).
   final String messageId;
+  /// Sortable 26-character identifier (ULID layout, Crockford base32).
+  final String? sessionId;
+  final int? seq;
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
         'type': type,
         'messageId': messageId,
+        if (sessionId != null) 'sessionId': sessionId,
+        if (seq != null) 'seq': seq,
       };
 }
 
@@ -319,23 +852,31 @@ class StreamDone extends StreamEvent {
     required this.type,
     required this.reason,
     required this.chars,
+    this.tokensIn,
+    this.tokensOut,
   });
 
   factory StreamDone.fromJson(Map<String, dynamic> json) => StreamDone(
         type: _reqStr(json, 'type'),
         reason: _reqOneOf(json, 'reason', const <String>['complete', 'interrupted', 'length']),
         chars: _reqInt(json, 'chars'),
+        tokensIn: _optInt(json, 'tokensIn'),
+        tokensOut: _optInt(json, 'tokensOut'),
       );
 
   final String type;
   final String reason;
   final int chars;
+  final int? tokensIn;
+  final int? tokensOut;
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
         'type': type,
         'reason': reason,
         'chars': chars,
+        if (tokensIn != null) 'tokensIn': tokensIn,
+        if (tokensOut != null) 'tokensOut': tokensOut,
       };
 }
 

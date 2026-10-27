@@ -178,30 +178,34 @@ packages/
 |   +-- src/
 |       +-- chat.ts                     [x] P0  EchoRequest + StreamEvent union
 |       +-- common.ts                   [x] P0  Id, ApiError, Health, Handshake
-|       +-- session.ts                  [ ] P1
-|       +-- message.ts                  [ ] P1
+|       +-- session.ts                  [x] P1  Session, SessionList, create, rename
+|       +-- message.ts                  [x] P1  Message, MessagePage, role, finish
 |       +-- memory.ts                   [ ] P2  tool payloads, error shapes
 |       +-- tools.ts                     [ ] P3  per-tool args + results
 |       +-- search.ts                   [ ] P3  3 search shapes
-|       +-- provider.ts                 [ ] P1
+|       +-- provider.ts                 [x] P1  Provider, models, check, credential
 |       +-- index.ts                    [x] P0  SCHEMAS manifest for codegen
 |
 +-- db/                                 DRIZZLE + SQLITE
 |   +-- src/
 |   |   +-- main/
-|   |   |   +-- schema.ts               [ ] P1  sessions, messages, tool_calls,
+|   |   |   +-- schema.ts               [x] P1  sessions, messages, tool_calls,
 |   |   |   |                                   memory_entries, memory_pending,
-|   |   |   |                                   attachments
+|   |   |   |                                   attachments; all carry profile_id
 |   |   |   +-- fts.ts                  [ ] P3  FTS5 vtable + sync triggers
-|   |   |   +-- client.ts               [ ] P1  WAL, synchronous=NORMAL, FKs on
+|   |   |   +-- client.ts               [x] P1  WAL, synchronous=NORMAL, FKs on,
+|   |   |                                       WAL checkpoint on close
 |   |   +-- cache/
-|   |   |   +-- schema.ts               [ ] P1  summaries, tool_result_cache,
+|   |   |   +-- schema.ts               [x] P1  summaries, tool_result_cache,
 |   |   |   |                                   token_counts, provider_models
-|   |   |   +-- client.ts               [ ] P1  synchronous=OFF, drop-on-mismatch
+|   |   |   +-- client.ts               [x] P1  synchronous=OFF, drop-on-mismatch
 |   |   |                                       incl. diagram_cache (PLAN §5.8)
-|   |   +-- migrate.ts                  [ ] P1  main only; cache is never migrated
+|   |   +-- migrate.ts                  [x] P1  main only; cache is never migrated
 |   |   +-- reconcile.ts                [ ] P2  .md files vs DB mirror; FILE WINS
-|   +-- drizzle/                        [ ] P1  generated migrations
+|   +-- migrations/                     [x] P1  hand-authored SQL + user_version
+|   |                                           NOT drizzle-kit: decision 0004
+|   +-- test/db.test.ts                 [x] P1  12 tests; reflects over a real DB
+|                                               so schema.ts cannot drift from SQL
 |
 +-- core/                               THE AGENT LOOP
 |   +-- src/
@@ -273,6 +277,11 @@ packages/
 ===============================================================================
 
 tooling/
++-- logo/                               [x] P1  SVG master -> every raster
+|   +-- rudra.svg                       [x] P1  the feather; >64px
+|   +-- rudra-small.svg                 [x] P1  the ocellus alone; <=64px
+|   +-- index.ts                        [x] P1  resvg; --check fails on drift
+|   +-- ico.ts                          [x] P1  Windows .ico container, zero-dep
 +-- schema-to-dart/
 |   +-- index.ts                        [x] P0  TypeBox -> Dart, --check mode
 |   |                                   *** FAILS THE BUILD ON DRIFT ***
@@ -291,6 +300,8 @@ tooling/
 docs/
 +-- ui-guidelines.md                    [x] P0  *** THE UI CONTRACT - READ FIRST ***
 +-- decisions/                          [~] P0  0001-phase-0-stack.md
+|                                           0002-palette, 0003-bounds,
+|                                           0004-migrations
 +-- memory-model.md                     [ ] P2  our rules + Hermes attribution
 +-- security.md                         [ ] P3  threat model: loopback, tools, memory
 +-- building.md                         [ ] P4  per-OS build instructions

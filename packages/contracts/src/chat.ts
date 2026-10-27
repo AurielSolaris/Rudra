@@ -10,6 +10,23 @@ import { ApiError, Id } from './common.ts';
  * one, so Phase 1 swaps the source of the deltas and changes nothing else.
  */
 
+/**
+ * Start a real turn.
+ *
+ * The user's message is committed to `main.db` *before* the provider request
+ * fires (PLAN.MD §7), so a crash between the two loses nothing: the message is
+ * already there and the assistant row simply never arrives.
+ */
+export const ChatRequest = Type.Object(
+   {
+      sessionId: Id,
+      message: Type.String({ minLength: 1, maxLength: 128_000 }),
+   },
+   { $id: 'ChatRequest', additionalProperties: false },
+);
+
+export type ChatRequestT = Static<typeof ChatRequest>;
+
 export const EchoRequest = Type.Object(
    {
       message: Type.String({ minLength: 1, maxLength: 8192 }),
@@ -28,6 +45,14 @@ export const StreamStart = Type.Object(
    {
       type: Type.Literal('start'),
       messageId: Id,
+      /**
+       * Absent on `/chat/echo`, which has no session. On a real turn this is
+       * the row autosave is already writing into, so the client can reconcile
+       * the stream against history it loads later.
+       */
+      sessionId: Type.Optional(Id),
+      /** Position of the assistant message in the transcript. */
+      seq: Type.Optional(Type.Integer({ minimum: 0 })),
    },
    { $id: 'StreamStart', additionalProperties: false },
 );
@@ -56,8 +81,16 @@ export const StreamDone = Type.Object(
          Type.Literal('interrupted'),
          Type.Literal('length'),
       ]),
-      /** Characters emitted. Phase 1 adds token accounting alongside this. */
+      /** Characters emitted. Always present; cheap and never guessed. */
       chars: Type.Integer({ minimum: 0 }),
+      /**
+       * Token counts as the provider reported them. Optional because a great
+       * many OpenAI-compatible endpoints omit usage on a streamed response, and
+       * a fabricated estimate in a field the UI displays as a cost is worse
+       * than an honest blank.
+       */
+      tokensIn: Type.Optional(Type.Integer({ minimum: 0 })),
+      tokensOut: Type.Optional(Type.Integer({ minimum: 0 })),
    },
    { $id: 'StreamDone', additionalProperties: false },
 );

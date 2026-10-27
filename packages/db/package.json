@@ -1,0 +1,17 @@
+{
+   "name": "@rudra/db",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "exports": {
+      "./main": "./src/main/client.ts",
+      "./main/schema": "./src/main/schema.ts",
+      "./cache": "./src/cache/client.ts",
+      "./cache/schema": "./src/cache/schema.ts",
+      "./migrate": "./src/migrate.ts"
+   },
+   "dependencies": {
+      "@rudra/shared": "workspace:*",
+      "drizzle-orm": "0.44.7"
+   }
+}

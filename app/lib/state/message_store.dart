@@ -18,8 +18,8 @@ enum Author { user, assistant }
 /// record and the notifier is released. The provider is therefore notified
 /// twice per message, not once per token (INVARIANT 11).
 @immutable
-class Message {
-  const Message({
+class TranscriptMessage {
+  const TranscriptMessage({
     required this.id,
     required this.author,
     required this.text,
@@ -41,13 +41,14 @@ class Message {
 
   bool get isStreaming => streaming != null;
 
-  Message settled(String finalText, StreamCompletion completion) => Message(
-    id: id,
-    author: author,
-    text: finalText,
-    createdAt: createdAt,
-    completion: completion,
-  );
+  TranscriptMessage settled(String finalText, StreamCompletion completion) =>
+      TranscriptMessage(
+        id: id,
+        author: author,
+        text: finalText,
+        createdAt: createdAt,
+        completion: completion,
+      );
 }
 
 /// The transcript.
@@ -55,20 +56,20 @@ class Message {
 /// Phase 0 keeps messages in memory. Phase 1 puts them in `main.db` with the
 /// autosave semantics in PLAN.MD §7 — the shape here is already what that
 /// needs, so persistence slots in behind it.
-final NotifierProvider<MessageStore, List<Message>> messagesProvider =
-    NotifierProvider<MessageStore, List<Message>>(MessageStore.new);
+final NotifierProvider<MessageStore, List<TranscriptMessage>> messagesProvider =
+    NotifierProvider<MessageStore, List<TranscriptMessage>>(MessageStore.new);
 
-class MessageStore extends Notifier<List<Message>> {
+class MessageStore extends Notifier<List<TranscriptMessage>> {
   StreamSubscription<StreamEvent>? _active;
   StreamingMessage? _activeNotifier;
 
   @override
-  List<Message> build() {
+  List<TranscriptMessage> build() {
     ref.onDispose(() {
       unawaited(_active?.cancel());
       _activeNotifier?.dispose();
     });
-    return const <Message>[];
+    return const <TranscriptMessage>[];
   }
 
   /// True while a response is streaming. The composer swaps Send for Stop.
@@ -87,7 +88,7 @@ class MessageStore extends Notifier<List<Message>> {
   /// the per-message cap it puts a ceiling on a session's worst case. Phase 1
   /// moves the backing store to `main.db`, and this becomes the resident
   /// window with older messages paged in — the cap stays, its meaning narrows.
-  void _setTranscript(List<Message> next) {
+  void _setTranscript(List<TranscriptMessage> next) {
     if (next.length <= Limits.maxTranscriptMessages) {
       state = next;
       return;
@@ -96,7 +97,7 @@ class MessageStore extends Notifier<List<Message>> {
     _dropped += overflow;
     // Dispose anything still streaming in the dropped range, or its notifier
     // outlives the only widget that listens to it.
-    for (final Message m in next.take(overflow)) {
+    for (final TranscriptMessage m in next.take(overflow)) {
       if (m.streaming != null && m.streaming != _activeNotifier) {
         m.streaming!.dispose();
       }
@@ -114,9 +115,9 @@ class MessageStore extends Notifier<List<Message>> {
     if (client == null) return;
 
     final DateTime now = DateTime.now();
-    _setTranscript(<Message>[
+    _setTranscript(<TranscriptMessage>[
       ...state,
-      Message(
+      TranscriptMessage(
         id: 'local-${now.microsecondsSinceEpoch}',
         author: Author.user,
         text: text,
@@ -153,9 +154,9 @@ class MessageStore extends Notifier<List<Message>> {
           messageId: messageId,
         );
         _activeNotifier = notifier;
-        _setTranscript(<Message>[
+        _setTranscript(<TranscriptMessage>[
           ...state,
-          Message(
+          TranscriptMessage(
             id: messageId,
             author: Author.assistant,
             text: '',
@@ -191,8 +192,8 @@ class MessageStore extends Notifier<List<Message>> {
     _activeNotifier = null;
 
     final String finalText = notifier.value;
-    state = <Message>[
-      for (final Message m in state)
+    state = <TranscriptMessage>[
+      for (final TranscriptMessage m in state)
         if (m.id == notifier.messageId) m.settled(finalText, completion) else m,
     ];
     notifier.dispose();
@@ -205,8 +206,8 @@ class MessageStore extends Notifier<List<Message>> {
   /// it. The cap is enforced on this path exactly as on the live one, because
   /// both go through `_setTranscript`.
   @visibleForTesting
-  void appendForTest(Iterable<Message> messages) {
-    _setTranscript(<Message>[...state, ...messages]);
+  void appendForTest(Iterable<TranscriptMessage> messages) {
+    _setTranscript(<TranscriptMessage>[...state, ...messages]);
   }
 
   /// Stop the current stream. §4 — cancellation is synchronous in the UI.
@@ -220,6 +221,6 @@ class MessageStore extends Notifier<List<Message>> {
   void clear() {
     interrupt();
     _dropped = 0;
-    state = const <Message>[];
+    state = const <TranscriptMessage>[];
   }
 }

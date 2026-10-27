@@ -195,6 +195,71 @@ void main() {
     });
   });
 
+  group('lists of contract objects decode and encode', () {
+    // The generator used to emit `_reqTypedList<Session>` for these, whose
+    // `is T` test is false for every element because elements arrive as plain
+    // maps — so a perfectly good payload threw. It was silent until a route
+    // actually returned a list, which is to say until Phase 1. These lock the
+    // round trip in both directions.
+    Map<String, dynamic> session(String id, String? title) => <String, dynamic>{
+      'id': id,
+      if (title != null) 'title': title,
+      'state': 'active',
+      'createdAt': 1700000000000,
+      'updatedAt': 1700000000001,
+      'provider': 'local',
+      'model': 'test-model',
+      'messageCount': 2,
+      'tokensIn': 10,
+      'tokensOut': 20,
+    };
+
+    test('a list of nested objects decodes element by element', () {
+      final SessionList list = SessionList.fromJson(<String, dynamic>{
+        'sessions': <dynamic>[
+          session('01J0000000000000000000000A', 'first'),
+          session('01J0000000000000000000000B', null),
+        ],
+      });
+
+      expect(list.sessions, hasLength(2));
+      expect(list.sessions[0].title, 'first');
+      expect(list.sessions[1].title, isNull);
+      expect(list.sessions[0].state, SessionState.active);
+      expect(list.nextCursor, isNull);
+    });
+
+    test('a bad element names its index, not just the list', () {
+      // "one of these is wrong" is not actionable; the index is.
+      expect(
+        () => SessionList.fromJson(<String, dynamic>{
+          'sessions': <dynamic>[session('01J0000000000000000000000A', null), 7],
+        }),
+        throwsA(
+          isA<WireTypeError>().having(
+            (WireTypeError e) => e.message,
+            'message',
+            contains('sessions[1]'),
+          ),
+        ),
+      );
+    });
+
+    test('toJson produces encodable JSON, not a list of Dart objects', () {
+      // The real bug this guards: `jsonEncode` on a List<Session> throws at the
+      // call site, far from the generated code that caused it.
+      final SessionList list = SessionList.fromJson(<String, dynamic>{
+        'sessions': <dynamic>[session('01J0000000000000000000000A', 'kept')],
+      });
+
+      final String encoded = jsonEncode(list.toJson());
+      final Map<String, dynamic> back =
+          jsonDecode(encoded) as Map<String, dynamic>;
+
+      expect(SessionList.fromJson(back).sessions[0].title, 'kept');
+    });
+  });
+
   group('typed readers reject wrong data', () {
     test('an integer field accepts 5.0 but not 5.5', () {
       // JSON has one number type, so a whole number may arrive as a double.
@@ -430,7 +495,7 @@ void main() {
   });
 
   group('the transcript is bounded', () {
-    Message filler(int i) => Message(
+    TranscriptMessage filler(int i) => TranscriptMessage(
       id: 'm$i',
       author: Author.user,
       text: 'message $i',
@@ -445,7 +510,10 @@ void main() {
       final MessageStore store = container.read(messagesProvider.notifier);
 
       store.appendForTest(
-        Iterable<Message>.generate(Limits.maxTranscriptMessages + 500, filler),
+        Iterable<TranscriptMessage>.generate(
+          Limits.maxTranscriptMessages + 500,
+          filler,
+        ),
       );
 
       expect(
@@ -470,7 +538,10 @@ void main() {
 
       expect(store.droppedCount, 0);
       store.appendForTest(
-        Iterable<Message>.generate(Limits.maxTranscriptMessages + 1, filler),
+        Iterable<TranscriptMessage>.generate(
+          Limits.maxTranscriptMessages + 1,
+          filler,
+        ),
       );
       expect(store.droppedCount, 1);
 
@@ -485,7 +556,7 @@ void main() {
       addTearDown(container.dispose);
       final MessageStore store = container.read(messagesProvider.notifier);
 
-      store.appendForTest(Iterable<Message>.generate(10, filler));
+      store.appendForTest(Iterable<TranscriptMessage>.generate(10, filler));
 
       expect(container.read(messagesProvider), hasLength(10));
       expect(store.droppedCount, 0);

@@ -69,7 +69,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Message> messages = ref.watch(messagesProvider);
+    final List<TranscriptMessage> messages = ref.watch(messagesProvider);
 
     // Follow the tail only while pinned. Scheduled post-frame so it runs after
     // the new message has been laid out.
@@ -104,7 +104,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                   // A stable key per message, so scroll position survives the
                   // list changing underneath it.
                   itemBuilder: (BuildContext context, int index) {
-                    final Message message = messages[index];
+                    final TranscriptMessage message = messages[index];
                     return Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(

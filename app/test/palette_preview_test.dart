@@ -34,14 +34,14 @@ void main() {
       // Seed a transcript so the preview shows real content, not the empty
       // state. A settled message needs no backend.
       final DateTime now = DateTime.now();
-      container.read(messagesProvider.notifier).state = <Message>[
-        Message(
+      container.read(messagesProvider.notifier).state = <TranscriptMessage>[
+        TranscriptMessage(
           id: 'm1',
           author: Author.user,
           text: 'What does Rudra actually remember between sessions?',
           createdAt: now,
         ),
-        Message(
+        TranscriptMessage(
           id: 'm2',
           author: Author.assistant,
           text:
@@ -54,13 +54,13 @@ void main() {
           createdAt: now,
           completion: const StreamCompletion.complete(),
         ),
-        Message(
+        TranscriptMessage(
           id: 'm3',
           author: Author.user,
           text: 'And if a reply gets cut off?',
           createdAt: now,
         ),
-        Message(
+        TranscriptMessage(
           id: 'm4',
           author: Author.assistant,
           text:

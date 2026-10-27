@@ -12,7 +12,7 @@ import 'package:rudra/ui/common/theme.dart';
 class MessageBubble extends StatelessWidget {
   const MessageBubble({required this.message, super.key});
 
-  final Message message;
+  final TranscriptMessage message;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,7 @@ class MessageBubble extends StatelessWidget {
 class _Body extends StatelessWidget {
   const _Body({required this.message});
 
-  final Message message;
+  final TranscriptMessage message;
 
   @override
   Widget build(BuildContext context) {

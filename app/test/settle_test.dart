@@ -21,12 +21,13 @@ void main() {
     addTearDown(container.dispose);
 
     final DateTime now = DateTime.now();
-    container.read(messagesProvider.notifier).state = <Message>[
+    container.read(messagesProvider.notifier).state = <TranscriptMessage>[
       for (int i = 0; i < 12; i++)
-        Message(
+        TranscriptMessage(
           id: 'm$i',
           author: i.isEven ? Author.user : Author.assistant,
-          text: 'Message number $i, long enough to take a line or two of room.',
+          text:
+              'TranscriptMessage number $i, long enough to take a line or two of room.',
           createdAt: now,
           completion: i.isEven ? null : const StreamCompletion.complete(),
         ),

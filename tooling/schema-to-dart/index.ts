@@ -189,6 +189,49 @@ List<T>? _optTypedList<T>(Map<String, dynamic> j, String f) {
   if (raw == null) return null;
   return List<T>.generate(raw.length, (i) => _item<T>(raw, i, f));
 }
+
+/// Reader for a list of nested contract objects.
+///
+/// [_reqTypedList] cannot do this job: its elements arrive as
+/// \`Map<String, dynamic>\`, so an \`is T\` test against a generated class is
+/// false for every element and the whole list fails. Each element is decoded
+/// through its own \`fromJson\`, which applies the same discipline one level down.
+List<T> _reqObjList<T>(
+  Map<String, dynamic> j,
+  String f,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  final raw = _reqList(j, f);
+  return List<T>.generate(raw.length, (i) {
+    final v = raw[i];
+    if (v is Map) return fromJson(Map<String, dynamic>.from(v));
+    return _bad('$f[$i]', 'an object', v);
+  });
+}
+
+List<T>? _optObjList<T>(
+  Map<String, dynamic> j,
+  String f,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  if (j[f] == null) return null;
+  return _reqObjList<T>(j, f, fromJson);
+}
+
+/// Reader for a list of enum members, decoded through the enum's own wire map.
+List<T> _reqEnumList<T>(Map<String, dynamic> j, String f, T Function(String) fromWire) {
+  final raw = _reqList(j, f);
+  return List<T>.generate(raw.length, (i) {
+    final v = raw[i];
+    if (v is String) return fromWire(v);
+    return _bad('$f[$i]', 'a string', v);
+  });
+}
+
+List<T>? _optEnumList<T>(Map<String, dynamic> j, String f, T Function(String) fromWire) {
+  if (j[f] == null) return null;
+  return _reqEnumList<T>(j, f, fromWire);
+}
 `;
 
 type Json = Record<string, unknown>;
@@ -239,6 +282,34 @@ function className(id: string): string {
 function fieldName(key: string): string {
    const camel = key.replace(/[_-]([a-z0-9])/g, (_, c: string) => c.toUpperCase());
    return camel.charAt(0).toLowerCase() + camel.slice(1);
+}
+
+/**
+ * What a list's elements are, for the readers and for `toJson`.
+ *
+ * A `scalar` element is a Dart primitive and needs no conversion either way.
+ * The other two do, in both directions, and getting that wrong is silent:
+ * decoding fails at runtime on real data, and encoding produces a list of Dart
+ * objects that `jsonEncode` refuses.
+ */
+type ElementKind =
+   | { readonly kind: 'object'; readonly cls: string }
+   | { readonly kind: 'enum'; readonly cls: string }
+   | { readonly kind: 'scalar' };
+
+function elementKind(items: Json): ElementKind {
+   const ref = items['$ref'];
+   if (typeof ref === 'string') {
+      return { kind: 'object', cls: className(ref.split('/').pop() ?? '') };
+   }
+   const id = items['$id'];
+   if (isStringUnion(items) && typeof id === 'string' && id !== '') {
+      return { kind: 'enum', cls: className(id) };
+   }
+   if (items['type'] === 'object' && typeof id === 'string' && namedSchemas.has(id)) {
+      return { kind: 'object', cls: className(id) };
+   }
+   return { kind: 'scalar' };
 }
 
 /** Map a property schema to a Dart type. Unknown shapes degrade to dynamic. */
@@ -334,6 +405,20 @@ function fromJsonExpr(key: string, prop: Json, required: boolean): string {
    if (prop['type'] === 'array') {
       const items = (prop['items'] ?? {}) as Json;
       const itemType = dartType(items, true);
+      const element = elementKind(items);
+
+      // A list of generated classes cannot go through `_reqTypedList`: its
+      // elements arrive as plain maps, so `is T` is false for every one of
+      // them and a perfectly good payload fails. Same for a list of enums,
+      // whose elements arrive as strings.
+      if (element.kind === 'object') {
+         const fn = required ? '_reqObjList' : '_optObjList';
+         return `${fn}<${element.cls}>(json, ${k}, ${element.cls}.fromJson)`;
+      }
+      if (element.kind === 'enum') {
+         const fn = required ? '_reqEnumList' : '_optEnumList';
+         return `${fn}<${element.cls}>(json, ${k}, (v) => ${element.cls}.fromWire(v, ${k}))`;
+      }
       return r(required ? `_reqTypedList<${itemType}>` : `_optTypedList<${itemType}>`);
    }
    if (prop['type'] === 'object') {
@@ -442,7 +527,21 @@ function emitClass(id: string, schema: Json, unionParent?: string): string {
       const isNamedObject =
          prop['type'] === 'object' && typeof propId === 'string' && namedSchemas.has(propId);
       const bang = required ? '' : '!';
-      const value = isEnum ? `${f}${bang}.wire` : isNamedObject ? `${f}${bang}.toJson()` : f;
+
+      // A list needs its elements converted too, or `jsonEncode` is handed a
+      // list of Dart objects and throws at the call site rather than here.
+      let listValue: string | undefined;
+      if (prop['type'] === 'array') {
+         const element = elementKind((prop['items'] ?? {}) as Json);
+         if (element.kind === 'object') {
+            listValue = `${f}${bang}.map((e) => e.toJson()).toList()`;
+         } else if (element.kind === 'enum') {
+            listValue = `${f}${bang}.map((e) => e.wire).toList()`;
+         }
+      }
+
+      const value =
+         listValue ?? (isEnum ? `${f}${bang}.wire` : isNamedObject ? `${f}${bang}.toJson()` : f);
       if (required) {
          lines.push(`        '${key}': ${value},`);
       } else {
